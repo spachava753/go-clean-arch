@@ -1,0 +1,232 @@
+openapi: 3.0.3
+
+info:
+  title: Streams API
+  description: APIs for managing Streams
+  version: 0.0.1
+
+servers:
+  - url: http://localhost:8080
+    description: Local (dev) server
+
+paths:
+  /streams/v0:
+    post:
+      summary: Create a Stream.
+      tags:
+        - streams
+      operationId: 'createStream'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Stream'
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+
+  /streams/v0/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Stream identifier
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Retrieve a Stream.
+      tags:
+        - streams
+      operationId: getStream
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stream'
+    delete:
+      summary: Delete a Stream.
+      tags:
+        - streams
+      operationId: deleteStream
+      responses:
+        204:
+          description: Stream was deleted successfully.
+
+components:
+  responses:
+    ok:
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Stream'
+    success:
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SuccessResponseBody'
+    error:
+      description: Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponseBody'
+  schemas:
+    Response400:
+      $ref: '#/components/schemas/ErrorResponseBody'
+    Response404:
+      $ref: '#/components/schemas/ErrorResponseBody'
+    ResponseDefault:
+      $ref: '#/components/schemas/ErrorResponseBody'
+    SuccessResponseBody:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: The success message
+          maxLength: 200
+          pattern: '[0-9a-zA-Z_ ;,.!@%*()]+'
+          example: 'done'
+      additionalProperties: false
+    ErrorResponseBody:
+      type: object
+      properties:
+        message:
+          type: string
+          description: A general description of the error.
+          example: Validation failed
+        errors:
+          type: array
+          description: An array of individual errors.
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+                description: JSON Pointer for problems in request body
+                example: /name
+              message:
+                type: string
+                description: A human-readable error message describing the client or system error.
+                maxLength: 200
+                example: A stream with the name 'NAME' already exists
+      required:
+        - message
+      additionalProperties: false
+    Geo:
+      type: string
+      description: The supported Geographical locations
+      enum:
+        - NA
+        - EU
+    Stream:
+      type: object
+      required:
+        - name
+        - environment
+        - platform
+        - producerGeos
+        - messageFormat
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: An internal unique identifier to identify a Stream
+          readOnly: true
+        name:
+          type: string
+          description: The name of the Stream
+          minLength: 1
+          maxLength: 100
+          pattern: '[a-z0-9_-]+'
+          example: my-awesome-stream-name
+        environment:
+          type: string
+          minLength: 1
+          maxLength: 100
+        platform:
+          type: string
+          minLength: 1
+          maxLength: 100
+        producerGeos:
+          type: array
+          description: GEOs the producer is in.
+          minItems: 1
+          maxItems: 1
+          items:
+            type: string
+            description: The supported Geographical locations
+            enum:
+              - NA
+              - EU
+              - test
+        messageFormat:
+          type: string
+          description: The type of message format
+          enum:
+            - avro
+            - protobuf
+            - jsonSchema
+            - json
+            - string
+            - byteArray
+        retentionGigabytes:
+          type: integer
+          description: This configuration controls the maximum size a partition can grow to before the old log segments are discarded to free up space. Since this limit is enforced at the partition level, multiply it by the number of partitions to compute the topic retention in gigabytes
+          minimum: 1
+          maximum: 20
+          default: 5
+        retentionHours:
+          type: integer
+          description: This configuration controls the maximum time we will retain a log before the old log segments are discarded to free up space. This represents an SLA on how soon consumers must read their data.
+          minimum: 1
+          maximum: 192
+          default: 96
+        partitionCount:
+          type: integer
+          description: A Stream is spread over a number of 'buckets' located on different servers. The partition count specifies the number of such 'buckets'. This configuration can be increased but not decreased.
+          minimum: 1
+          maximum: 18
+          default: 1
+        createdBy:
+          description: Specifies who created the resource
+          type: string
+          readOnly: true
+          maxLength: 100
+          example: jane.doe@nike.com
+        creationDate:
+          description: Specifies when this resource is created in ISO8601 format
+          type: string
+          format: date-time
+          readOnly: true
+        modifiedBy:
+          description: Specifies who last modified the resource
+          type: string
+          readOnly: true
+          maxLength: 100
+          example: jane.doe@nike.com
+        modificationDate:
+          description: Specifies when this resource is last modified in ISO8601 format
+          type: string
+          format: date-time
+          readOnly: true
+      additionalProperties: false
+    Streams:
+      description: >-
+        The response object of GetStreamsAPI
+      properties:
+        objects:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stream'
